@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Particle Life</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* Use dark color scheme */
+:root { color-scheme: dark; }
+
+/* Remove margins and center canvas */
+body {
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: black;
+}
+
+/* Canvas border styling */
+canvas {
+    border: 3px dashed #444;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- Load lil-gui library for interactive parameter controls -->
+<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17"></script>
+
+<script>
+
+// Access canvas element and 2D rendering context
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Resize canvas according to window dimensions
+function resize() {
+    canvas.width = window.innerWidth * 0.95;
+    canvas.height = window.innerHeight * 0.95;
+}
+resize();
+window.addEventListener("resize", resize);
+
+// Available colors for particle species
+const predefinedColors = [
+    "green", "red", "orange", "cyan",
+    "magenta", "lavender", "teal"
+];
+
+// Global simulation parameters
+const settings = {
+    numColors: 4,           // number of species
+    atomsPerColor: 250,     // particles per species
+    interactionRadius: 80,  // interaction cutoff distance
+    viscosity: 0.6,         // damping coefficient
+    timeScale: 1.0,         // integration time step
+    gravity: 0.0,           // vertical acceleration
+    maxSpeed: 4,            // velocity cap for stability
+    glow: true,             // enable glow effect
+    trails: true,           // enable motion trails
+    showEnergy: true        // display total kinetic energy
+};
+
+// Simulation state variables
+let atoms = [];
+let rules = [];
+let radii = [];
+let totalEnergy = 0;
+
+// Initialize interaction coefficients between species
+function initRules() {
+    rules = [];
+    radii = [];
+    for (let i = 0; i < settings.numColors; i++) {
+        rules[i] = [];
+        radii[i] = settings.interactionRadius;
+        for (let j = 0; j < settings.numColors; j++) {
+            rules[i][j] = Math.random() * 2 - 1;
+        }
+    }
+}
+
+// Generate random position within canvas
+function randomX() { return Math.random() * canvas.width; }
+function randomY() { return Math.random() * canvas.height; }
+
+// Create particles with zero initial velocity
+function initAtoms() {
+    atoms = [];
+    for (let c = 0; c < settings.numColors; c++) {
+        for (let i = 0; i < settings.atomsPerColor; i++) {
+            atoms.push({
+                x: randomX(),
+                y: randomY(),
+                vx: 0,
+                vy: 0,
+                color: c
+            });
+        }
+    }
+}
+
+// Reset simulation state
+function reset() {
+    initRules();
+    initAtoms();
+}
+
+reset();
+
+// Compute pairwise interactions and update particle states
+function applyForces() {
+
+    totalEnergy = 0;
+
+    for (let i = 0; i < atoms.length; i++) {
+        const a = atoms[i];
+
+        for (let j = i + 1; j < atoms.length; j++) {
+            const b = atoms[j];
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist2 = dx * dx + dy * dy;
+
+            const r = radii[a.color];
+
+            // Apply force only within interaction radius
+            if (dist2 > 0 && dist2 < r * r) {
+
+                const dist = Math.sqrt(dist2);
+
+                const strength =
+                    rules[a.color][b.color] *
+                    (1 - dist / r);
+
+                const fx = strength * dx / dist;
+                const fy = strength * dy / dist;
+
+                a.vx += fx;
+                a.vy += fy;
+                b.vx -= fx;
+                b.vy -= fy;
+            }
+        }
+    }
+
+    // Update velocity and position
+    for (const a of atoms) {
+
+        a.vy += settings.gravity;
+
+        // Apply damping
+        a.vx *= (1 - settings.viscosity);
+        a.vy *= (1 - settings.viscosity);
+
+        // Limit maximum speed
+        const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
+        if (speed > settings.maxSpeed) {
+            a.vx *= settings.maxSpeed / speed;
+            a.vy *= settings.maxSpeed / speed;
+        }
+
+        // Update position
+        a.x += a.vx * settings.timeScale;
+        a.y += a.vy * settings.timeScale;
+
+        // Reflect at boundaries
+        if (a.x < 0) { a.x = 0; a.vx *= -1; }
+        if (a.x > canvas.width) { a.x = canvas.width; a.vx *= -1; }
+        if (a.y < 0) { a.y = 0; a.vy *= -1; }
+        if (a.y > canvas.height) { a.y = canvas.height; a.vy *= -1; }
+
+        // Accumulate kinetic energy
+        totalEnergy += 0.5 * (a.vx * a.vx + a.vy * a.vy);
+    }
+}
+
+// Render particles on canvas
+function draw() {
+
+    if (settings.trails) {
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1.0;
+    } else {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (settings.glow) ctx.shadowBlur = 8;
+
+    for (const a of atoms) {
+        const color = predefinedColors[a.color];
+        if (settings.glow) ctx.shadowColor = color;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Display total kinetic energy
+    if (settings.showEnergy) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "white";
+        ctx.fillText("Energy: " + totalEnergy.toFixed(2), 20, 30);
+    }
+}
+
+// Animation loop
+function update() {
+    applyForces();
+    draw();
+    requestAnimationFrame(update);
+}
+
+update();
+
+// Create GUI controls
+const gui = new lil.GUI();
+
+gui.add(settings, "numColors", 1, 7, 1).onFinishChange(reset);
+gui.add(settings, "atomsPerColor", 50, 500, 10).onFinishChange(reset);
+gui.add(settings, "interactionRadius", 20, 150, 5).onFinishChange(reset);
+gui.add(settings, "viscosity", 0.0, 1.0, 0.05);
+gui.add(settings, "timeScale", 0.1, 3.0, 0.1);
+gui.add(settings, "gravity", -0.5, 0.5, 0.05);
+gui.add(settings, "maxSpeed", 1, 10, 0.5);
+gui.add(settings, "glow");
+gui.add(settings, "trails");
+gui.add(settings, "showEnergy");
+gui.add({ reset: reset }, "reset");
+
+</script>
+
+</body>
+</html>
+
