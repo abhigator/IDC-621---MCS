@@ -5,13 +5,22 @@
 <title>Code Walkthrough</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)'], ['$', '$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
 <style>
 body {
     margin: 0;
     font-family: "Segoe UI", Arial, sans-serif;
     background: #0f1117;
     color: #e6edf3;
-    line-height: 1.7;
+    line-height: 1.75;
 }
 
 nav {
@@ -41,7 +50,7 @@ h1 {
 }
 
 h2 {
-    margin-top: 40px;
+    margin-top: 50px;
     color: #58a6ff;
 }
 
@@ -53,10 +62,6 @@ h2 {
     overflow-x: auto;
     font-family: monospace;
     font-size: 14px;
-}
-
-.section {
-    margin-bottom: 50px;
 }
 </style>
 </head>
@@ -75,17 +80,18 @@ h2 {
 <h1>Code Walkthrough</h1>
 
 <p>
-This section explains the logical structure of the simulation. The implementation is organized into distinct components: 
-initialization, force computation, time integration, and rendering. Each part corresponds directly to the mathematical model described earlier.
+This section provides a structured explanation of the simulation implementation. 
+The program is organized into logically distinct stages that directly correspond to the mathematical formulation of the model: 
+parameter definition, system initialization, force evaluation, time evolution, and visual rendering.
 </p>
 
----
+<hr>
 
-<div class="section">
-<h2>1. Simulation Parameters</h2>
+<h2>1. Parameter Definition</h2>
 
 <p>
-The simulation parameters are stored inside a configuration object. These control the physical and visual behavior of the system.
+All simulation parameters are collected within a configuration object. These parameters define both the physical behaviour 
+of the particle system and its visual representation.
 </p>
 
 <div class="code-box">
@@ -104,26 +110,23 @@ const settings = {
 </div>
 
 <p>
-These parameters correspond to the mathematical quantities:
+These quantities correspond to the mathematical parameters:
 </p>
 
 <ul>
-<li>interactionRadius → \( R_s \)</li>
-<li>viscosity → \( \eta \)</li>
-<li>timeScale → \( \Delta t \)</li>
-<li>gravity → external acceleration</li>
+<li>Interaction radius → \( R_s \)</li>
+<li>Viscosity (damping factor) → \( \eta \)</li>
+<li>Time scale → \( \Delta t \)</li>
+<li>Gravity → external acceleration term</li>
 </ul>
 
-</div>
+<hr>
 
----
-
-<div class="section">
-<h2>2. Initialization</h2>
+<h2>2. System Initialization</h2>
 
 <p>
-During initialization, the interaction matrix and particle states are generated.
-Each species interaction coefficient is randomly assigned within the interval [-1, 1].
+During initialization, two components are generated: the species interaction matrix and the initial particle states. 
+The interaction matrix assigns a coefficient in the interval [-1, 1] to each ordered pair of species.
 </p>
 
 <div class="code-box">
@@ -138,19 +141,17 @@ function initRules() {
 </div>
 
 <p>
-Particles are then initialized with random positions and zero velocity.
+Particles are then placed at uniformly random positions within the domain, 
+with their initial velocities set to zero.
 </p>
 
-</div>
+<hr>
 
----
-
-<div class="section">
-<h2>3. Force Computation</h2>
+<h2>3. Force Evaluation</h2>
 
 <p>
-For each unordered pair of particles, the inter-particle distance is computed.
-If the distance is less than the interaction radius, a linear distance-dependent force is applied.
+For each unordered pair of particles, the Euclidean separation distance is computed. 
+If this distance is less than the interaction radius, a distance-dependent force is applied.
 </p>
 
 <div class="code-box">
@@ -165,44 +166,39 @@ if (dist2 < r * r) {
 </div>
 
 <p>
-This directly implements the force law:
+This implements the force relationship
 </p>
+
+\[
+F \propto A_{ij} \left( 1 - \frac{d}{R} \right)
+\]
 
 <p>
-F ∝ A_{ij} (1 − d/R)
+where the interaction strength decays linearly with distance and vanishes at the interaction boundary.
+Newton’s third law symmetry is enforced by applying equal and opposite forces to both particles.
 </p>
 
-<p>
-Newton’s third law symmetry is preserved by applying equal and opposite forces to both particles.
-</p>
+<hr>
 
-</div>
-
----
-
-<div class="section">
 <h2>4. Velocity Update</h2>
 
 <p>
-After computing net forces, velocities are updated using damping and optional gravity.
+After computing the net force on each particle, velocities are updated according to the damped integration rule.
 </p>
 
 <div class="code-box">
 a.vx *= (1 - settings.viscosity);
 a.vy *= (1 - settings.viscosity);
-
 a.vy += settings.gravity;
 </div>
 
 <p>
-Velocity magnitude is constrained to prevent numerical instability.
+The viscosity term introduces controlled energy dissipation, ensuring numerical stability 
+and preventing unbounded acceleration. An optional gravitational term may also be included.
 </p>
 
-</div>
+<hr>
 
----
-
-<div class="section">
 <h2>5. Position Update</h2>
 
 <p>
@@ -215,37 +211,32 @@ a.y += a.vy * settings.timeScale;
 </div>
 
 <p>
-Reflective boundary conditions are applied to maintain particles within the simulation domain.
+Reflective boundary conditions are applied to ensure particles remain within the simulation domain.
 </p>
 
-</div>
+<hr>
 
----
-
-<div class="section">
-<h2>6. Energy Computation</h2>
+<h2>6. Energy Measurement</h2>
 
 <p>
-The total kinetic energy is monitored as:
+The total kinetic energy of the system is monitored as:
 </p>
 
-<div class="code-box">
-totalEnergy += 0.5 * (a.vx * a.vx + a.vy * a.vy);
-</div>
+\[
+E = \frac{1}{2} \sum_{i=1}^{N} \left( v_{x,i}^2 + v_{y,i}^2 \right)
+\]
 
 <p>
-This provides a global measure of dynamical activity and stability.
+This provides a global indicator of the dynamical state of the system.
 </p>
 
-</div>
+<hr>
 
----
-
-<div class="section">
 <h2>7. Rendering</h2>
 
 <p>
-Particles are rendered using HTML5 Canvas. Visual enhancements such as glow and motion trails are implemented to highlight emergent structures.
+The particle states are visualized using the HTML5 Canvas API. Rendering is entirely separate from the 
+physical simulation and serves only to display the system evolution in real time.
 </p>
 
 <div class="code-box">
@@ -254,26 +245,14 @@ ctx.arc(a.x, a.y, 2, 0, Math.PI * 2);
 ctx.fill();
 </div>
 
-<p>
-Rendering does not affect the physical simulation; it only visualizes particle states.
-</p>
+<hr>
 
-</div>
-
----
-
-<h2>Computational Complexity</h2>
+<h2>Computational Considerations</h2>
 
 <p>
-The force computation uses pairwise interactions, leading to:
-</p>
-
-<p>
-Time Complexity: O(N²)
-</p>
-
-<p>
-This quadratic scaling limits performance for very large particle counts. Optimization strategies such as spatial partitioning (e.g., grid hashing) could reduce this to near O(N).
+The force evaluation stage scales as \( O(N^2) \), since all particle pairs are considered. 
+For large systems, spatial partitioning techniques such as grid-based neighbor search could significantly 
+reduce computational cost.
 </p>
 
 </div>
