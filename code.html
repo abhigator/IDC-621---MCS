@@ -63,6 +63,11 @@ h2 {
     font-family: monospace;
     font-size: 14px;
 }
+
+.full-code {
+    max-height: 500px;
+    overflow-y: scroll;
+}
 </style>
 </head>
 
@@ -80,9 +85,9 @@ h2 {
 <h1>Code Walkthrough</h1>
 
 <p>
-This section provides a structured explanation of the simulation implementation. 
-The program is organized into logically distinct stages that directly correspond to the mathematical formulation of the model: 
-parameter definition, system initialization, force evaluation, time evolution, and visual rendering.
+This section presents a structured explanation of the simulation implementation. 
+The program is organized into logical stages that directly correspond to the mathematical formulation: 
+parameter definition, initialization, force evaluation, time evolution, energy computation, and rendering.
 </p>
 
 <hr>
@@ -90,8 +95,7 @@ parameter definition, system initialization, force evaluation, time evolution, a
 <h2>1. Parameter Definition</h2>
 
 <p>
-All simulation parameters are collected within a configuration object. These parameters define both the physical behaviour 
-of the particle system and its visual representation.
+All simulation parameters are defined within a configuration object. These control the physical dynamics and visualization behaviour of the system.
 </p>
 
 <div class="code-box">
@@ -110,23 +114,23 @@ const settings = {
 </div>
 
 <p>
-These quantities correspond to the mathematical parameters:
+These correspond to the mathematical quantities:
 </p>
 
 <ul>
 <li>Interaction radius → \( R_s \)</li>
-<li>Viscosity (damping factor) → \( \eta \)</li>
-<li>Time scale → \( \Delta t \)</li>
+<li>Viscosity (damping) → \( \eta \)</li>
+<li>Time step scaling → \( \Delta t \)</li>
 <li>Gravity → external acceleration term</li>
 </ul>
 
 <hr>
 
-<h2>2. System Initialisation</h2>
+<h2>2. System Initialization</h2>
 
 <p>
-During initialisation, two components are generated: the species interaction matrix and the initial particle states. 
-The interaction matrix assigns a coefficient in the interval [-1, 1] to each ordered pair of species.
+The simulation begins by constructing a species interaction matrix and initializing particle states.
+Each interaction coefficient is assigned a value in the interval [-1, 1].
 </p>
 
 <div class="code-box">
@@ -141,8 +145,7 @@ function initRules() {
 </div>
 
 <p>
-Particles are then placed at uniformly random positions within the domain, 
-with their initial velocities set to zero.
+Particles are then placed at random positions within the simulation domain with zero initial velocity.
 </p>
 
 <hr>
@@ -150,8 +153,8 @@ with their initial velocities set to zero.
 <h2>3. Force Evaluation</h2>
 
 <p>
-For each unordered pair of particles, the Euclidean separation distance is computed. 
-If this distance is less than the interaction radius, a distance-dependent force is applied.
+For each unordered particle pair, the Euclidean distance is computed. If the separation is less than the interaction radius,
+a linear distance-dependent force is applied.
 </p>
 
 <div class="code-box">
@@ -166,7 +169,7 @@ if (dist2 < r * r) {
 </div>
 
 <p>
-This implements the force relationship
+This implements the force law
 </p>
 
 \[
@@ -174,8 +177,7 @@ F \propto A_{ij} \left( 1 - \frac{d}{R} \right)
 \]
 
 <p>
-where the interaction strength decays linearly with distance and vanishes at the interaction boundary.
-Newton’s third law symmetry is enforced by applying equal and opposite forces to both particles.
+Equal and opposite forces are applied to preserve symmetry.
 </p>
 
 <hr>
@@ -183,7 +185,7 @@ Newton’s third law symmetry is enforced by applying equal and opposite forces 
 <h2>4. Velocity Update</h2>
 
 <p>
-After computing the net force on each particle, velocities are updated according to the damped integration rule.
+After computing the net force on each particle, velocities are updated using a damped integration rule.
 </p>
 
 <div class="code-box">
@@ -193,17 +195,12 @@ a.vy += settings.gravity;
 </div>
 
 <p>
-The viscosity term introduces controlled energy dissipation, ensuring numerical stability 
-and preventing unbounded acceleration. An optional gravitational term may also be included.
+Velocity magnitude is constrained to maintain numerical stability.
 </p>
 
 <hr>
 
 <h2>5. Position Update</h2>
-
-<p>
-Positions are updated using explicit time stepping:
-</p>
 
 <div class="code-box">
 a.x += a.vx * settings.timeScale;
@@ -211,33 +208,24 @@ a.y += a.vy * settings.timeScale;
 </div>
 
 <p>
-Reflective boundary conditions are applied to ensure particles remain within the simulation domain.
+Reflective boundary conditions ensure particles remain within the domain.
 </p>
 
 <hr>
 
-<h2>6. Energy Measurement</h2>
-
-<p>
-The total kinetic energy of the system is monitored as:
-</p>
+<h2>6. Energy Computation</h2>
 
 \[
 E = \frac{1}{2} \sum_{i=1}^{N} \left( v_{x,i}^2 + v_{y,i}^2 \right)
 \]
 
 <p>
-This provides a global indicator of the dynamical state of the system.
+This provides a global measure of dynamical activity.
 </p>
 
 <hr>
 
 <h2>7. Rendering</h2>
-
-<p>
-The particle states are visualized using the HTML5 Canvas API. Rendering is entirely separate from the 
-physical simulation and serves only to display the system evolution in real time.
-</p>
 
 <div class="code-box">
 ctx.beginPath();
@@ -245,18 +233,159 @@ ctx.arc(a.x, a.y, 2, 0, Math.PI * 2);
 ctx.fill();
 </div>
 
+<p>
+Rendering is independent of the physical simulation and serves only for visualization.
+</p>
+
 <hr>
 
-<h2>Computational Considerations</h2>
+<h2>Complete Source Code</h2>
 
 <p>
-The force evaluation stage scales as \( O(N^2) \), since all particle pairs are considered. 
-For large systems, spatial partitioning techniques such as grid-based neighbor search could significantly 
-reduce computational cost.
+The complete implementation is provided below for verification and reference.
 </p>
+
+<div class="code-box full-code">
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Particle Life&lt;/title&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;style&gt;
+body { margin: 0; overflow: hidden; background: black; }
+canvas { display: block; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;canvas id="canvas"&gt;&lt;/canvas&gt;
+
+&lt;script&gt;
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const predefinedColors = ["green","red","orange","cyan","magenta","lavender","teal"];
+
+const settings = {
+    numColors: 4,
+    atomsPerColor: 250,
+    interactionRadius: 80,
+    viscosity: 0.6,
+    timeScale: 1.0,
+    gravity: 0.0,
+    maxSpeed: 4
+};
+
+let atoms = [];
+let rules = [];
+
+function initRules() {
+    rules = [];
+    for (let i = 0; i &lt; settings.numColors; i++) {
+        rules[i] = [];
+        for (let j = 0; j &lt; settings.numColors; j++) {
+            rules[i][j] = Math.random() * 2 - 1;
+        }
+    }
+}
+
+function initAtoms() {
+    atoms = [];
+    for (let c = 0; c &lt; settings.numColors; c++) {
+        for (let i = 0; i &lt; settings.atomsPerColor; i++) {
+            atoms.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: 0,
+                vy: 0,
+                color: c
+            });
+        }
+    }
+}
+
+function applyForces() {
+    for (let i = 0; i &lt; atoms.length; i++) {
+        const a = atoms[i];
+        for (let j = i + 1; j &lt; atoms.length; j++) {
+            const b = atoms[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist2 = dx * dx + dy * dy;
+
+            if (dist2 &gt; 0 &amp;&amp; dist2 &lt; settings.interactionRadius ** 2) {
+                const dist = Math.sqrt(dist2);
+                const strength = rules[a.color][b.color] *
+                                 (1 - dist / settings.interactionRadius);
+
+                const fx = strength * dx / dist;
+                const fy = strength * dy / dist;
+
+                a.vx += fx;
+                a.vy += fy;
+                b.vx -= fx;
+                b.vy -= fy;
+            }
+        }
+    }
+
+    for (const a of atoms) {
+        a.vx *= (1 - settings.viscosity);
+        a.vy *= (1 - settings.viscosity);
+        a.vy += settings.gravity;
+
+        const speed = Math.sqrt(a.vx*a.vx + a.vy*a.vy);
+        if (speed &gt; settings.maxSpeed) {
+            a.vx *= settings.maxSpeed / speed;
+            a.vy *= settings.maxSpeed / speed;
+        }
+
+        a.x += a.vx * settings.timeScale;
+        a.y += a.vy * settings.timeScale;
+
+        if (a.x &lt; 0 || a.x &gt; canvas.width) a.vx *= -1;
+        if (a.y &lt; 0 || a.y &gt; canvas.height) a.vy *= -1;
+    }
+}
+
+function draw() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    for (const a of atoms) {
+        ctx.fillStyle = predefinedColors[a.color];
+        ctx.beginPath();
+        ctx.arc(a.x,a.y,2,0,Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function update() {
+    applyForces();
+    draw();
+    requestAnimationFrame(update);
+}
+
+initRules();
+initAtoms();
+update();
+
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
 
 </div>
 
+</div>
 </body>
 </html>
+
 
