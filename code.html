@@ -116,33 +116,136 @@ const settings = {
 <h2>2. Initialisation</h2>
 
 <p>
-The interaction matrix is randomly generated in the interval [-1, 1].
-Each species pair therefore exhibits either attraction or repulsion.
-Particles are then initialised with random spatial positions and zero velocity.
+The interaction matrix is generated first. Each species pair is assigned
+a random interaction coefficient in the interval [-1, 1]. Positive values
+produce attraction, while negative values produce repulsion.
 </p>
 
+<div class="code-box">
+<pre><code>
+function initRules() {
+    rules = [];
+    for (let i = 0; i < settings.numColors; i++) {
+        rules[i] = [];
+        for (let j = 0; j < settings.numColors; j++) {
+            rules[i][j] = Math.random() * 2 - 1;
+        }
+    }
+}
+</code></pre>
+</div>
+
+<p>
+Particles are then initialised with random spatial positions and zero velocity.
+Each particle is assigned a species index corresponding to its colour group.
+</p>
+
+<div class="code-box">
+<pre><code>
+function initAtoms() {
+    atoms = [];
+    for (let c = 0; c < settings.numColors; c++) {
+        for (let i = 0; i < settings.atomsPerColor; i++) {
+            atoms.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: 0,
+                vy: 0,
+                color: c
+            });
+        }
+    }
+}
+</code></pre>
+</div>
+
 <hr>
+
 
 <h2>3. Force Computation</h2>
 
 <p>
-For each unordered particle pair, the inter-particle distance is computed.
-If the separation is smaller than the interaction radius,
+For each unordered pair of particles, the separation vector and squared distance
+are computed. If the separation is smaller than the interaction radius,
 a linear distance-dependent force is applied.
-Equal and opposite forces ensure symmetry.
+</p>
+
+<div class="code-box">
+<pre><code>
+const dx = b.x - a.x;
+const dy = b.y - a.y;
+const dist2 = dx * dx + dy * dy;
+
+if (dist2 > 0 && dist2 < settings.interactionRadius ** 2) {
+
+    const dist = Math.sqrt(dist2);
+
+    const strength =
+        rules[a.color][b.color] *
+        (1 - dist / settings.interactionRadius);
+
+    const fx = strength * dx / dist;
+    const fy = strength * dy / dist;
+
+    a.vx += fx;
+    a.vy += fy;
+    b.vx -= fx;
+    b.vy -= fy;
+}
+</code></pre>
+</div>
+
+<p>
+The force magnitude decreases linearly with distance and vanishes at the
+interaction boundary. Equal and opposite forces preserve symmetry.
 </p>
 
 <hr>
+
 
 <h2>4. Time Integration</h2>
 
 <p>
-Velocities are updated using damping and optional external acceleration.
-Positions are then advanced using a discrete-time update rule.
-Velocity magnitude is limited to prevent numerical instability.
+After computing forces, velocities are updated using damping and optional
+external acceleration. The damping term models viscous dissipation.
 </p>
 
+<div class="code-box">
+<pre><code>
+a.vx *= (1 - settings.viscosity);
+a.vy *= (1 - settings.viscosity);
+a.vy += settings.gravity;
+</code></pre>
+</div>
+
+<p>
+To maintain numerical stability, the velocity magnitude is limited.
+</p>
+
+<div class="code-box">
+<pre><code>
+const speed = Math.sqrt(a.vx*a.vx + a.vy*a.vy);
+
+if (speed > settings.maxSpeed) {
+    a.vx *= settings.maxSpeed / speed;
+    a.vy *= settings.maxSpeed / speed;
+}
+</code></pre>
+</div>
+
+<p>
+Finally, positions are advanced using a discrete-time update rule.
+</p>
+
+<div class="code-box">
+<pre><code>
+a.x += a.vx * settings.timeScale;
+a.y += a.vy * settings.timeScale;
+</code></pre>
+</div>
+
 <hr>
+
 
 <h2>5. Rendering</h2>
 
