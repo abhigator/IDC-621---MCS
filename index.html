@@ -1,9 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Multi-Species Particle Simulation</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Multi-Species Interacting Particle System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)'], ['$', '$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #0f1117;
+    color: #e6edf3;
+    line-height: 1.6;
+}
+
+nav {
+    background: #161b22;
+    padding: 15px 40px;
+    position: sticky;
+    top: 0;
+}
+
+nav a {
+    color: #58a6ff;
+    text-decoration: none;
+    margin-right: 25px;
+    font-weight: 500;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 60px auto;
+    padding: 0 20px;
+}
+
+h1 {
+    font-size: 34px;
+    color: #79c0ff;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 50px;
+    color: #58a6ff;
+}
+
+ul {
+    margin-top: 10px;
+}
+
+.section-box {
+    background: #161b22;
+    padding: 25px;
+    border-radius: 8px;
+    margin-top: 25px;
+}
+
+footer {
+    margin-top: 80px;
+    text-align: center;
+    font-size: 14px;
+    color: #8b949e;
+    padding-bottom: 40px;
+}
+</style>
 </head>
+
 <body>
 
 <nav>
@@ -14,23 +89,132 @@
 </nav>
 
 <div class="container">
-    <h1>Multi-Species Interacting Particle System</h1>
 
-    <p>
-    This project implements a continuous two-dimensional multi-species 
-    particle system governed by short-range interaction rules. 
-    Emergent clustering and self-organized patterns arise purely from 
-    local interaction dynamics.
-    </p>
+<h1>Multi-Species Interacting Particle System</h1>
 
-    <h2>Project Overview</h2>
-    <ul>
-        <li>Multi-species interaction matrix</li>
-        <li>Short-range attractive/repulsive forces</li>
-        <li>Velocity damping and boundary reflection</li>
-        <li>Emergent clustering dynamics</li>
-    </ul>
+<p>
+This project implements a continuous two-dimensional multi-species particle model inspired by cellular automata principles. 
+Although particles evolve in continuous space, the system updates in discrete time steps using deterministic local interaction rules.
+Complex spatial organization emerges purely from short-range attractive and repulsive forces between species.
+</p>
+
+<div class="section-box">
+<h2>Project Overview</h2>
+
+<ul>
+<li>Multi-species interaction matrix</li>
+<li>Short-range attraction and repulsion forces</li>
+<li>Velocity damping and reflective boundary conditions</li>
+<li>Energy monitoring and stability control</li>
+<li>Emergent clustering and pattern formation</li>
+</ul>
 </div>
 
+<h2>Motivation</h2>
+
+<p>
+Many physical and biological systems exhibit large-scale organization arising from simple local interactions. 
+Examples include bacterial colony growth, flocking systems, reaction-diffusion chemistry, and segregation dynamics. 
+This project explores how a minimal rule-based interaction matrix can generate non-trivial macroscopic structures without centralized control.
+</p>
+
+<h2>Mathematical Framework</h2>
+
+<p>
+Each particle belongs to a species \( s \in \{1, \dots, N\} \).  
+Interactions are governed by a matrix:
+</p>
+
+\[
+A_{ij} \in [-1,1]
+\]
+
+<p>
+where:
+</p>
+
+<ul>
+<li>\( A_{ij} > 0 \) → attraction</li>
+<li>\( A_{ij} < 0 \) → repulsion</li>
+</ul>
+
+<p>
+For two particles \( i \) and \( j \) separated by distance \( d_{ij} \), and within interaction radius \( r_s \), the force magnitude is:
+</p>
+
+\[
+F_{ij} = A_{s_i s_j} \left( 1 - \frac{d_{ij}}{r_s} \right)
+\]
+
+<p>
+Velocity update equation:
+</p>
+
+\[
+\mathbf{v}_i(t+1) = (1 - \eta)\mathbf{v}_i(t) + \sum_{j \neq i} \mathbf{F}_{ij} + \mathbf{g}
+\]
+
+<p>
+Position update:
+</p>
+
+\[
+\mathbf{x}_i(t+1) = \mathbf{x}_i(t) + \Delta t \, \mathbf{v}_i(t+1)
+\]
+
+<p>
+where:
+</p>
+
+<ul>
+<li>\( \eta \) is the viscosity (damping factor)</li>
+<li>\( \Delta t \) is the time scale parameter</li>
+<li>\( \mathbf{g} \) represents optional gravitational acceleration</li>
+<li>Reflective boundary conditions are applied at domain edges</li>
+</ul>
+
+<h2>System Parameters</h2>
+
+<div class="section-box">
+<ul>
+<li>Number of species</li>
+<li>Particles per species</li>
+<li>Interaction radius</li>
+<li>Viscosity (damping)</li>
+<li>Time scale</li>
+<li>Gravity</li>
+<li>Maximum velocity constraint</li>
+<li>Glow and trail visualization</li>
+<li>Energy measurement</li>
+</ul>
+</div>
+
+<h2>Emergent Behaviour</h2>
+
+<p>
+Depending on the interaction matrix configuration, the system exhibits:
+</p>
+
+<ul>
+<li>Species segregation</li>
+<li>Stable radial clustering</li>
+<li>Spiral and rotating structures</li>
+<li>Dynamic oscillatory swarms</li>
+<li>Metastable collective states</li>
+<li>Self-assembled particle aggregates</li>
+</ul>
+
+<p>
+The model demonstrates how deterministic microscopic interaction rules can produce complex macroscopic organization — 
+a fundamental concept in cellular automata, statistical physics, and complex systems theory.
+</p>
+
+<footer>
+IDC-621: Mathematical and Computational Systems <br>
+Multi-Species Interacting Particle Model
+</footer>
+
+</div>
 </body>
 </html>
+
