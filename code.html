@@ -1,9 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Code Walkthrough</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Code Walkthrough</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #0f1117;
+    color: #e6edf3;
+    line-height: 1.7;
+}
+
+nav {
+    background: #161b22;
+    padding: 15px 40px;
+}
+
+nav a {
+    color: #58a6ff;
+    text-decoration: none;
+    margin-right: 25px;
+    font-weight: 500;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 60px auto;
+    padding: 0 20px;
+}
+
+h1 {
+    color: #79c0ff;
+}
+
+h2 {
+    margin-top: 40px;
+    color: #58a6ff;
+}
+
+.code-box {
+    background: #161b22;
+    padding: 18px;
+    border-radius: 8px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.section {
+    margin-bottom: 50px;
+}
+</style>
 </head>
+
 <body>
 
 <nav>
@@ -14,29 +71,213 @@
 </nav>
 
 <div class="container">
-    <h1>Code Structure</h1>
 
-    <h2>1. Initialization</h2>
-    <p>
-    The simulation initializes particle species, interaction matrix, and
-    random particle positions.
-    </p>
+<h1>Code Walkthrough</h1>
 
-    <h2>2. Force Computation</h2>
-    <p>
-    Pairwise forces are computed within a finite interaction radius.
-    </p>
+<p>
+This section explains the logical structure of the simulation. The implementation is organized into distinct components: 
+initialization, force computation, time integration, and rendering. Each part corresponds directly to the mathematical model described earlier.
+</p>
 
-    <h2>3. Time Integration</h2>
-    <p>
-    Velocities are damped and positions updated each frame.
-    </p>
+---
 
-    <h2>4. Rendering</h2>
-    <p>
-    Particles are rendered using HTML5 Canvas.
-    </p>
+<div class="section">
+<h2>1. Simulation Parameters</h2>
+
+<p>
+The simulation parameters are stored inside a configuration object. These control the physical and visual behavior of the system.
+</p>
+
+<div class="code-box">
+const settings = {
+    numColors: 4,
+    atomsPerColor: 250,
+    interactionRadius: 80,
+    viscosity: 0.6,
+    timeScale: 1.0,
+    gravity: 0.0,
+    maxSpeed: 4,
+    glow: true,
+    trails: true,
+    showEnergy: true
+};
+</div>
+
+<p>
+These parameters correspond to the mathematical quantities:
+</p>
+
+<ul>
+<li>interactionRadius → \( R_s \)</li>
+<li>viscosity → \( \eta \)</li>
+<li>timeScale → \( \Delta t \)</li>
+<li>gravity → external acceleration</li>
+</ul>
+
+</div>
+
+---
+
+<div class="section">
+<h2>2. Initialization</h2>
+
+<p>
+During initialization, the interaction matrix and particle states are generated.
+Each species interaction coefficient is randomly assigned within the interval [-1, 1].
+</p>
+
+<div class="code-box">
+function initRules() {
+    for (let i = 0; i < settings.numColors; i++) {
+        rules[i] = [];
+        for (let j = 0; j < settings.numColors; j++) {
+            rules[i][j] = Math.random() * 2 - 1;
+        }
+    }
+}
+</div>
+
+<p>
+Particles are then initialized with random positions and zero velocity.
+</p>
+
+</div>
+
+---
+
+<div class="section">
+<h2>3. Force Computation</h2>
+
+<p>
+For each unordered pair of particles, the inter-particle distance is computed.
+If the distance is less than the interaction radius, a linear distance-dependent force is applied.
+</p>
+
+<div class="code-box">
+const dx = b.x - a.x;
+const dy = b.y - a.y;
+const dist2 = dx * dx + dy * dy;
+
+if (dist2 < r * r) {
+    const dist = Math.sqrt(dist2);
+    const strength = rules[a.color][b.color] * (1 - dist / r);
+}
+</div>
+
+<p>
+This directly implements the force law:
+</p>
+
+<p>
+F ∝ A_{ij} (1 − d/R)
+</p>
+
+<p>
+Newton’s third law symmetry is preserved by applying equal and opposite forces to both particles.
+</p>
+
+</div>
+
+---
+
+<div class="section">
+<h2>4. Velocity Update</h2>
+
+<p>
+After computing net forces, velocities are updated using damping and optional gravity.
+</p>
+
+<div class="code-box">
+a.vx *= (1 - settings.viscosity);
+a.vy *= (1 - settings.viscosity);
+
+a.vy += settings.gravity;
+</div>
+
+<p>
+Velocity magnitude is constrained to prevent numerical instability.
+</p>
+
+</div>
+
+---
+
+<div class="section">
+<h2>5. Position Update</h2>
+
+<p>
+Positions are updated using explicit time stepping:
+</p>
+
+<div class="code-box">
+a.x += a.vx * settings.timeScale;
+a.y += a.vy * settings.timeScale;
+</div>
+
+<p>
+Reflective boundary conditions are applied to maintain particles within the simulation domain.
+</p>
+
+</div>
+
+---
+
+<div class="section">
+<h2>6. Energy Computation</h2>
+
+<p>
+The total kinetic energy is monitored as:
+</p>
+
+<div class="code-box">
+totalEnergy += 0.5 * (a.vx * a.vx + a.vy * a.vy);
+</div>
+
+<p>
+This provides a global measure of dynamical activity and stability.
+</p>
+
+</div>
+
+---
+
+<div class="section">
+<h2>7. Rendering</h2>
+
+<p>
+Particles are rendered using HTML5 Canvas. Visual enhancements such as glow and motion trails are implemented to highlight emergent structures.
+</p>
+
+<div class="code-box">
+ctx.beginPath();
+ctx.arc(a.x, a.y, 2, 0, Math.PI * 2);
+ctx.fill();
+</div>
+
+<p>
+Rendering does not affect the physical simulation; it only visualizes particle states.
+</p>
+
+</div>
+
+---
+
+<h2>Computational Complexity</h2>
+
+<p>
+The force computation uses pairwise interactions, leading to:
+</p>
+
+<p>
+Time Complexity: O(N²)
+</p>
+
+<p>
+This quadratic scaling limits performance for very large particle counts. Optimization strategies such as spatial partitioning (e.g., grid hashing) could reduce this to near O(N).
+</p>
+
 </div>
 
 </body>
 </html>
+
