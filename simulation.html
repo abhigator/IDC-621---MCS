@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Particle Simulation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <a href="index.html">Home</a>
+    <a href="simulation.html">Simulation</a>
+    <a href="model.html">Model</a>
+    <a href="code.html">Code Walkthrough</a>
+</nav>
+
+<div class="container">
+    <h1>Live Simulation</h1>
+    <canvas id="canvas"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17"></script>
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth * 0.85;
+    canvas.height = window.innerHeight * 0.75;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const predefinedColors = [
+    "green", "red", "orange", "cyan",
+    "magenta", "lavender", "teal"
+];
+
+const settings = {
+    numColors: 4,
+    atomsPerColor: 250,
+    interactionRadius: 80,
+    viscosity: 0.6,
+    timeScale: 1.0,
+    gravity: 0.0,
+    maxSpeed: 4,
+    glow: true,
+    trails: true,
+    showEnergy: true
+};
+
+let atoms = [];
+let rules = [];
+let radii = [];
+let totalEnergy = 0;
+
+function initRules() {
+    rules = [];
+    radii = [];
+    for (let i = 0; i < settings.numColors; i++) {
+        rules[i] = [];
+        radii[i] = settings.interactionRadius;
+        for (let j = 0; j < settings.numColors; j++) {
+            rules[i][j] = Math.random() * 2 - 1;
+        }
+    }
+}
+
+function randomX() { return Math.random() * canvas.width; }
+function randomY() { return Math.random() * canvas.height; }
+
+function initAtoms() {
+    atoms = [];
+    for (let c = 0; c < settings.numColors; c++) {
+        for (let i = 0; i < settings.atomsPerColor; i++) {
+            atoms.push({
+                x: randomX(),
+                y: randomY(),
+                vx: 0,
+                vy: 0,
+                color: c
+            });
+        }
+    }
+}
+
+function reset() {
+    initRules();
+    initAtoms();
+}
+
+reset();
+
+function applyForces() {
+
+    totalEnergy = 0;
+
+    for (let i = 0; i < atoms.length; i++) {
+        const a = atoms[i];
+
+        for (let j = i + 1; j < atoms.length; j++) {
+            const b = atoms[j];
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist2 = dx * dx + dy * dy;
+            const r = radii[a.color];
+
+            if (dist2 > 0 && dist2 < r * r) {
+
+                const dist = Math.sqrt(dist2);
+
+                const strength =
+                    rules[a.color][b.color] *
+                    (1 - dist / r);
+
+                const fx = strength * dx / dist;
+                const fy = strength * dy / dist;
+
+                a.vx += fx;
+                a.vy += fy;
+                b.vx -= fx;
+                b.vy -= fy;
+            }
+        }
+    }
+
+    for (const a of atoms) {
+
+        a.vy += settings.gravity;
+
+        a.vx *= (1 - settings.viscosity);
+        a.vy *= (1 - settings.viscosity);
+
+        const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
+        if (speed > settings.maxSpeed) {
+            a.vx *= settings.maxSpeed / speed;
+            a.vy *= settings.maxSpeed / speed;
+        }
+
+        a.x += a.vx * settings.timeScale;
+        a.y += a.vy * settings.timeScale;
+
+        if (a.x < 0) { a.x = 0; a.vx *= -1; }
+        if (a.x > canvas.width) { a.x = canvas.width; a.vx *= -1; }
+        if (a.y < 0) { a.y = 0; a.vy *= -1; }
+        if (a.y > canvas.height) { a.y = canvas.height; a.vy *= -1; }
+
+        totalEnergy += 0.5 * (a.vx * a.vx + a.vy * a.vy);
+    }
+}
+
+function draw() {
+
+    if (settings.trails) {
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1.0;
+    } else {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (settings.glow) ctx.shadowBlur = 8;
+
+    for (const a of atoms) {
+        const color = predefinedColors[a.color];
+        if (settings.glow) ctx.shadowColor = color;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    if (settings.showEnergy) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "white";
+        ctx.fillText("Energy: " + totalEnergy.toFixed(2), 20, 30);
+    }
+}
+
+function update() {
+    applyForces();
+    draw();
+    requestAnimationFrame(update);
+}
+
+update();
+
+const gui = new lil.GUI();
+
+gui.add(settings, "numColors", 1, 7, 1).onFinishChange(reset);
+gui.add(settings, "atomsPerColor", 50, 500, 10).onFinishChange(reset);
+gui.add(settings, "interactionRadius", 20, 150, 5).onFinishChange(reset);
+gui.add(settings, "viscosity", 0.0, 1.0, 0.05);
+gui.add(settings, "timeScale", 0.1, 3.0, 0.1);
+gui.add(settings, "gravity", -0.5, 0.5, 0.05);
+gui.add(settings, "maxSpeed", 1, 10, 0.5);
+gui.add(settings, "glow");
+gui.add(settings, "trails");
+gui.add(settings, "showEnergy");
+gui.add({ reset: reset }, "reset");
+
+</script>
+
+</body>
+</html>
+
+
