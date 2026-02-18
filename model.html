@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Explanation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+    <a href="index.html">Home</a>
+    <a href="simulation.html">Simulation</a>
+    <a href="model.html">Model</a>
+    <a href="code.html">Code Walkthrough</a>
+</nav>
+
+<div class="container">
+    <h1>Mathematical Model</h1>
+
+    <p>
+    Each particle i interacts with particle j if their separation is less than 
+    a species-dependent interaction radius.
+    </p>
+
+    <h2>Force Law</h2>
+
+    <p>
+    F_ij = g_ij (1 - r_ij / R_i) (x_j - x_i) / r_ij
+    </p>
+
+    <h2>Time Evolution</h2>
+
+    <p>
+    v_i(t+1) = (1 - η)v_i(t) + ΣF_ij
+    </p>
+
+    <p>
+    x_i(t+1) = x_i(t) + Δt v_i(t+1)
+    </p>
+</div>
+
+</body>
+</html>

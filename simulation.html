@@ -1,79 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Particle Life</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-/* Use dark color scheme */
-:root { color-scheme: dark; }
-
-/* Remove margins and center canvas */
-body {
-    margin: 0;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: black;
-}
-
-/* Canvas border styling */
-canvas {
-    border: 3px dashed #444;
-}
-</style>
+    <title>Particle Simulation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<canvas id="canvas"></canvas>
+<nav>
+    <a href="index.html">Home</a>
+    <a href="simulation.html">Simulation</a>
+    <a href="model.html">Model</a>
+    <a href="code.html">Code Walkthrough</a>
+</nav>
 
-<!-- Load lil-gui library for interactive parameter controls -->
+<div class="container">
+    <h1>Live Simulation</h1>
+    <canvas id="canvas"></canvas>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17"></script>
 
 <script>
 
-// Access canvas element and 2D rendering context
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Resize canvas according to window dimensions
 function resize() {
-    canvas.width = window.innerWidth * 0.95;
-    canvas.height = window.innerHeight * 0.95;
+    canvas.width = window.innerWidth * 0.85;
+    canvas.height = window.innerHeight * 0.75;
 }
 resize();
 window.addEventListener("resize", resize);
 
-// Available colors for particle species
 const predefinedColors = [
     "green", "red", "orange", "cyan",
     "magenta", "lavender", "teal"
 ];
 
-// Global simulation parameters
 const settings = {
-    numColors: 4,           // number of species
-    atomsPerColor: 250,     // particles per species
-    interactionRadius: 80,  // interaction cutoff distance
-    viscosity: 0.6,         // damping coefficient
-    timeScale: 1.0,         // integration time step
-    gravity: 0.0,           // vertical acceleration
-    maxSpeed: 4,            // velocity cap for stability
-    glow: true,             // enable glow effect
-    trails: true,           // enable motion trails
-    showEnergy: true        // display total kinetic energy
+    numColors: 4,
+    atomsPerColor: 250,
+    interactionRadius: 80,
+    viscosity: 0.6,
+    timeScale: 1.0,
+    gravity: 0.0,
+    maxSpeed: 4,
+    glow: true,
+    trails: true,
+    showEnergy: true
 };
 
-// Simulation state variables
 let atoms = [];
 let rules = [];
 let radii = [];
 let totalEnergy = 0;
 
-// Initialize interaction coefficients between species
 function initRules() {
     rules = [];
     radii = [];
@@ -86,11 +69,9 @@ function initRules() {
     }
 }
 
-// Generate random position within canvas
 function randomX() { return Math.random() * canvas.width; }
 function randomY() { return Math.random() * canvas.height; }
 
-// Create particles with zero initial velocity
 function initAtoms() {
     atoms = [];
     for (let c = 0; c < settings.numColors; c++) {
@@ -106,7 +87,6 @@ function initAtoms() {
     }
 }
 
-// Reset simulation state
 function reset() {
     initRules();
     initAtoms();
@@ -114,7 +94,6 @@ function reset() {
 
 reset();
 
-// Compute pairwise interactions and update particle states
 function applyForces() {
 
     totalEnergy = 0;
@@ -128,10 +107,8 @@ function applyForces() {
             const dx = b.x - a.x;
             const dy = b.y - a.y;
             const dist2 = dx * dx + dy * dy;
-
             const r = radii[a.color];
 
-            // Apply force only within interaction radius
             if (dist2 > 0 && dist2 < r * r) {
 
                 const dist = Math.sqrt(dist2);
@@ -151,38 +128,31 @@ function applyForces() {
         }
     }
 
-    // Update velocity and position
     for (const a of atoms) {
 
         a.vy += settings.gravity;
 
-        // Apply damping
         a.vx *= (1 - settings.viscosity);
         a.vy *= (1 - settings.viscosity);
 
-        // Limit maximum speed
         const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
         if (speed > settings.maxSpeed) {
             a.vx *= settings.maxSpeed / speed;
             a.vy *= settings.maxSpeed / speed;
         }
 
-        // Update position
         a.x += a.vx * settings.timeScale;
         a.y += a.vy * settings.timeScale;
 
-        // Reflect at boundaries
         if (a.x < 0) { a.x = 0; a.vx *= -1; }
         if (a.x > canvas.width) { a.x = canvas.width; a.vx *= -1; }
         if (a.y < 0) { a.y = 0; a.vy *= -1; }
         if (a.y > canvas.height) { a.y = canvas.height; a.vy *= -1; }
 
-        // Accumulate kinetic energy
         totalEnergy += 0.5 * (a.vx * a.vx + a.vy * a.vy);
     }
 }
 
-// Render particles on canvas
 function draw() {
 
     if (settings.trails) {
@@ -207,7 +177,6 @@ function draw() {
         ctx.fill();
     }
 
-    // Display total kinetic energy
     if (settings.showEnergy) {
         ctx.shadowBlur = 0;
         ctx.fillStyle = "white";
@@ -215,7 +184,6 @@ function draw() {
     }
 }
 
-// Animation loop
 function update() {
     applyForces();
     draw();
@@ -224,7 +192,6 @@ function update() {
 
 update();
 
-// Create GUI controls
 const gui = new lil.GUI();
 
 gui.add(settings, "numColors", 1, 7, 1).onFinishChange(reset);
@@ -243,4 +210,5 @@ gui.add({ reset: reset }, "reset");
 
 </body>
 </html>
+
 
