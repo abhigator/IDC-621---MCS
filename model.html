@@ -1,9 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Model Explanation</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Mathematical Model</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)'], ['$', '$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #0f1117;
+    color: #e6edf3;
+    line-height: 1.7;
+}
+
+nav {
+    background: #161b22;
+    padding: 15px 40px;
+}
+
+nav a {
+    color: #58a6ff;
+    text-decoration: none;
+    margin-right: 25px;
+    font-weight: 500;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 0 20px;
+}
+
+h1 {
+    color: #79c0ff;
+}
+
+h2 {
+    margin-top: 40px;
+    color: #58a6ff;
+}
+
+.equation-box {
+    background: #161b22;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+ul {
+    margin-top: 10px;
+}
+</style>
 </head>
+
 <body>
 
 <nav>
@@ -14,29 +77,152 @@
 </nav>
 
 <div class="container">
-    <h1>Mathematical Model</h1>
 
-    <p>
-    Each particle i interacts with particle j if their separation is less than 
-    a species-dependent interaction radius.
-    </p>
+<h1>Mathematical Model</h1>
 
-    <h2>Force Law</h2>
+<p>
+The system consists of \( N \) interacting particles in a two-dimensional domain.
+Each particle \( i \) is characterized by:
+</p>
 
-    <p>
-    F_ij = g_ij (1 - r_ij / R_i) (x_j - x_i) / r_ij
-    </p>
+<ul>
+<li>Position: \( \mathbf{x}_i = (x_i, y_i) \)</li>
+<li>Velocity: \( \mathbf{v}_i = (v_{x,i}, v_{y,i}) \)</li>
+<li>Species index: \( s_i \in \{1, \dots, M\} \)</li>
+</ul>
 
-    <h2>Time Evolution</h2>
+Particles interact only within a finite interaction radius \( R_{s_i} \).
 
-    <p>
-    v_i(t+1) = (1 - η)v_i(t) + ΣF_ij
-    </p>
+---
 
-    <p>
-    x_i(t+1) = x_i(t) + Δt v_i(t+1)
-    </p>
+<h2>Interaction Matrix</h2>
+
+<p>
+Species interactions are defined by a matrix:
+</p>
+
+<div class="equation-box">
+\[
+A_{ij} \in [-1, 1]
+\]
 </div>
 
+<p>
+where:
+</p>
+
+<ul>
+<li>\( A_{ij} > 0 \) → attraction</li>
+<li>\( A_{ij} < 0 \) → repulsion</li>
+<li>\( A_{ij} = 0 \) → no interaction</li>
+</ul>
+
+---
+
+<h2>Force Law</h2>
+
+<p>
+For two particles \( i \) and \( j \) separated by distance:
+</p>
+
+<div class="equation-box">
+\[
+d_{ij} = \| \mathbf{x}_j - \mathbf{x}_i \|
+\]
+</div>
+
+<p>
+If \( d_{ij} < R_{s_i} \), the force applied on particle \( i \) is:
+</p>
+
+<div class="equation-box">
+\[
+\mathbf{F}_{ij} =
+A_{s_i s_j}
+\left( 1 - \frac{d_{ij}}{R_{s_i}} \right)
+\frac{\mathbf{x}_j - \mathbf{x}_i}{d_{ij}}
+\]
+</div>
+
+<p>
+The force magnitude decreases linearly with distance and vanishes at \( d_{ij} = R_{s_i} \).
+</p>
+
+---
+
+<h2>Total Force</h2>
+
+<p>
+The net force on particle \( i \) is:
+</p>
+
+<div class="equation-box">
+\[
+\mathbf{F}_i = \sum_{j \ne i} \mathbf{F}_{ij}
+\]
+</div>
+
+---
+
+<h2>Time Evolution</h2>
+
+<h3>Velocity Update</h3>
+
+<div class="equation-box">
+\[
+\mathbf{v}_i(t+1)
+=
+(1 - \eta)\mathbf{v}_i(t)
++
+\mathbf{F}_i
++
+\mathbf{g}
+\]
+</div>
+
+<h3>Position Update</h3>
+
+<div class="equation-box">
+\[
+\mathbf{x}_i(t+1)
+=
+\mathbf{x}_i(t)
++
+\Delta t \, \mathbf{v}_i(t+1)
+\]
+</div>
+
+---
+
+<h2>Parameters</h2>
+
+<ul>
+<li>\( \eta \) — viscosity (damping coefficient)</li>
+<li>\( \Delta t \) — time scale parameter</li>
+<li>\( \mathbf{g} \) — gravitational acceleration (optional)</li>
+<li>Reflective boundary conditions applied at domain edges</li>
+</ul>
+
+---
+
+<h2>Energy Measurement</h2>
+
+<p>
+The total kinetic energy of the system is computed as:
+</p>
+
+<div class="equation-box">
+\[
+E(t) = \frac{1}{2}
+\sum_{i=1}^{N}
+\| \mathbf{v}_i(t) \|^2
+\]
+</div>
+
+<p>
+Energy serves as a global measure of dynamical activity in the system.
+</p>
+
+</div>
 </body>
 </html>
